@@ -84,7 +84,7 @@ func (p *SessionMgr) Del(r *http.Request, w http.ResponseWriter) {
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
-	if session, ok := p.mSessions[cookie.Value]; ok {
+	if _, ok := p.mSessions[cookie.Value]; ok {
 		delete(p.mSessions, cookie.Value)
 	}
 }
