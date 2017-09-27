@@ -1,6 +1,7 @@
 package session
 
 import (
+	"net/http"
 	"sync"
 	"time"
 )
@@ -36,29 +37,55 @@ func (p *SessionMgr) GC() {
 	})
 }
 
-func (p *SessionMgr) Set(id string, key, val interface{}) {
+func (p *SessionMgr) Set(w http.ResponseWriter, key, val interface{}) {
+	cookie := &http.Cookie{
+		Name:    key.(string),
+		Value:   val.(string),
+		Expires: time.Now.Add(maxTime.(time.Duration)),
+	}
+
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
-	if _, ok := p.mSessions[id]; !ok {
+	if _, ok := p.mSessions[cookie.Value]; !ok {
 		p.mSessions[id] = &Session{
 			mLastVisitTime: time.Now(),
 			Value:          make(map[interface{}]interface{}),
 		}
 	}
 	p.mSessions[id].Value[key] = val
+	w.SetCookie(w, cookie)
 }
 
-func (p *SessionMgr) Get(id string, key interface{}) (interface{}, bool) {
+func (p *SessionMgr) Get(r *http.Request, key interface{}) (interface{}, bool) {
+	cookie, err := r.Cookie(p.mCookieName)
+	if err != nil {
+		return nil, false
+	}
+
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
-	if session, ok := p.mSessions[id]; ok {
+	if session, ok := p.mSessions[cookie.Value]; ok {
 		if val, ok := session.Value[key]; ok {
 			return val, ok
 		}
 	}
 	return nil, false
+}
+
+func (p *SessionMgr) Del(r *http.Request, w http.ResponseWriter) {
+	cookie, err := r.Cookie(p.mCookieName)
+	if err != nil {
+		return
+	}
+
+	p.mLock.Lock()
+	defer p.mLock.Unlock()
+
+	if session, ok := p.mSessions[cookie.Value]; ok {
+		delete(p.mSessions, cookie.Value)
+	}
 }
 
 type Session struct {
