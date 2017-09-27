@@ -39,16 +39,6 @@ func NewHeaderSessionMgr(keyName string, maxTime int64) *SessionMgr {
 	return mgr
 }
 
-func NewSessionMgr(cookieName string, maxTime int64) *SessionMgr {
-	mgr := &SessionMgr{
-		mKeyName:  cookieName,
-		mMaxTime:  maxTime,
-		mSessions: make(map[string]*Session),
-	}
-	mgr.GC()
-	return mgr
-}
-
 func generCookieValue() string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
@@ -75,58 +65,41 @@ func (p *SessionMgr) GC() {
 }
 
 func (p *SessionMgr) Set(r *http.Request, w http.ResponseWriter, key, val interface{}) {
-	cookie, err := r.Cookie(p.mKeyName)
-	if err != nil {
-		cookie = &http.Cookie{
-			Name:    p.mKeyName,
-			Value:   generCookieValue(),
-			Expires: time.Now().Add(time.Duration(p.mMaxTime)),
-		}
+	storeKey := m.store.Get(r)
+	if store == "" {
+		storeKey := generCookieValue()
+		p.store.Set(w, storeKey)
 	}
 
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
-	if _, ok := p.mSessions[cookie.Value]; !ok {
+	if _, ok := p.mSessions[storeKey]; !ok {
 		p.mSessions[cookie.Value] = &Session{
 			mLastVisitTime: time.Now(),
 			Value:          make(map[interface{}]interface{}),
 		}
 	}
-	p.mSessions[cookie.Value].Value[key] = val
+	p.mSessions[storeKey].Value[key] = val
 	http.SetCookie(w, cookie)
 }
 
 func (p *SessionMgr) Get(r *http.Request, key interface{}) (interface{}, bool) {
-	cookie, err := r.Cookie(p.mKeyName)
-	if err != nil {
+	storeKey := p.store.Get(r)
+	if storeKey == "" {
 		return nil, false
 	}
 
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
-	if session, ok := p.mSessions[cookie.Value]; ok {
+	if session, ok := p.mSessions[storeKey]; ok {
 		if val, ok := session.Value[key]; ok {
 			session.mLastVisitTime = time.Now()
 			return val, ok
 		}
 	}
 	return nil, false
-}
-
-func (p *SessionMgr) Del(r *http.Request, w http.ResponseWriter) {
-	cookie, err := r.Cookie(p.mKeyName)
-	if err != nil {
-		return
-	}
-
-	p.mLock.Lock()
-	defer p.mLock.Unlock()
-
-	if _, ok := p.mSessions[cookie.Value]; ok {
-		delete(p.mSessions, cookie.Value)
-	}
 }
 
 type Session struct {
