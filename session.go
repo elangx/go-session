@@ -26,7 +26,7 @@ func NewSessionMgr(cookieName string, maxTime int64) *SessionMgr {
 	return mgr
 }
 
-func generCookieValue() {
+func generCookieValue() string {
 	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	bytes := []byte(str)
 	result := []byte{}
