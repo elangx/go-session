@@ -1,10 +1,13 @@
 package session
 
 import (
+	"math/rand"
 	"net/http"
 	"sync"
 	"time"
 )
+
+const COOKIE_LENGTH = 64
 
 type SessionMgr struct {
 	mSessions   map[string]*Session
@@ -23,6 +26,17 @@ func NewSessionMgr(cookieName string, maxTime int64) *SessionMgr {
 	return mgr
 }
 
+func generCookieValue() {
+	str := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	bytes := []byte(str)
+	result := []byte{}
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	for i := 0; i < COOKIE_LENGTH; i++ {
+		result = append(result, bytes[r.Intn(len(bytes))])
+	}
+	return string(result)
+}
+
 func (p *SessionMgr) GC() {
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
@@ -37,11 +51,14 @@ func (p *SessionMgr) GC() {
 	})
 }
 
-func (p *SessionMgr) Set(w http.ResponseWriter, key, val interface{}) {
-	cookie := &http.Cookie{
-		Name:    key.(string),
-		Value:   val.(string),
-		Expires: time.Now().Add(time.Duration(p.mMaxTime)),
+func (p *SessionMgr) Set(r *http.Request, w http.ResponseWriter, key, val interface{}) {
+	cookie, err := r.Cookie(p.mCookieName)
+	if err != nil {
+		cookie = &http.Cookie{
+			Name:    p.mCookieName,
+			Value:   generCookieValue(),
+			Expires: time.Now().Add(time.Duration(p.mMaxTime)),
+		}
 	}
 
 	p.mLock.Lock()
