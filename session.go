@@ -41,7 +41,7 @@ func (p *SessionMgr) Set(w http.ResponseWriter, key, val interface{}) {
 	cookie := &http.Cookie{
 		Name:    key.(string),
 		Value:   val.(string),
-		Expires: time.Now().Add(p.mMaxTime.(time.Duration)),
+		Expires: time.Now().Add(time.Duration(p.mMaxTime)),
 	}
 
 	p.mLock.Lock()
@@ -68,6 +68,7 @@ func (p *SessionMgr) Get(r *http.Request, key interface{}) (interface{}, bool) {
 
 	if session, ok := p.mSessions[cookie.Value]; ok {
 		if val, ok := session.Value[key]; ok {
+			session.mLastVisitTime = time.Now()
 			return val, ok
 		}
 	}
