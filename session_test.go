@@ -1,11 +1,18 @@
 package session
 
 import (
+	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
 
 func Test_NewMgr(t *testing.T) {
+	request := &http.NewRequest{
+		method: "/",
+		url:    "/",
+		body:   strings.NewReader(""),
+	}
 	mgr := NewSessionMgr("123ccc", 1)
 	mgr.Set("name", "ccc", "234")
 	val, ok := mgr.Get("name", "ccc")

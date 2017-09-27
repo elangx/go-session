@@ -41,20 +41,20 @@ func (p *SessionMgr) Set(w http.ResponseWriter, key, val interface{}) {
 	cookie := &http.Cookie{
 		Name:    key.(string),
 		Value:   val.(string),
-		Expires: time.Now().Add(maxTime.(time.Duration)),
+		Expires: time.Now().Add(p.maxTime.(time.Duration)),
 	}
 
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
 
 	if _, ok := p.mSessions[cookie.Value]; !ok {
-		p.mSessions[id] = &Session{
+		p.mSessions[cookie.Value] = &Session{
 			mLastVisitTime: time.Now(),
 			Value:          make(map[interface{}]interface{}),
 		}
 	}
-	p.mSessions[id].Value[key] = val
-	w.SetCookie(w, cookie)
+	p.mSessions[cookie.Value].Value[key] = val
+	http.SetCookie(w, cookie)
 }
 
 func (p *SessionMgr) Get(r *http.Request, key interface{}) (interface{}, bool) {
