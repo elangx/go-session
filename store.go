@@ -15,7 +15,7 @@ type CookieStore struct {
 	KeyName string
 }
 
-func (p *CookieStore) Get(r *http.Request) string {
+func (p CookieStore) Get(r *http.Request) string {
 	cookie, err := r.Cookie(p.KeyName)
 	if err != nil {
 		return ""
@@ -23,7 +23,7 @@ func (p *CookieStore) Get(r *http.Request) string {
 	return cookie.Value
 }
 
-func (p *CookieStore) Set(w http.Writer, val string) {
+func (p CookieStore) Set(w http.ResponseWriter, val string) {
 	cookie := &http.Cookie{
 		Name:    p.KeyName,
 		Value:   val,
@@ -36,10 +36,10 @@ type HeaderStore struct {
 	KeyName string
 }
 
-func (p *HeaderStore) Get(r *http.Request) string {
+func (p HeaderStore) Get(r *http.Request) string {
 	return r.Header.Get(p.KeyName)
 }
 
-func (p *HeaderStore) Set(w http.Writer, val string) {
+func (p HeaderStore) Set(w http.ResponseWriter, val string) {
 	w.Header().Set(p.KeyName, val)
 }

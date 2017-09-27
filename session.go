@@ -14,7 +14,7 @@ type SessionMgr struct {
 	mKeyName  string
 	mLock     sync.RWMutex
 	mMaxTime  int64
-	store     *Store
+	store     Store
 }
 
 func NewCookieSessionMgr(keyName string, maxTime int64) *SessionMgr {
@@ -22,7 +22,7 @@ func NewCookieSessionMgr(keyName string, maxTime int64) *SessionMgr {
 		mKeyName:  keyName,
 		mMaxTime:  maxTime,
 		mSessions: make(map[string]*Session),
-		store:     &CookieStore{KeyName: keyName, ExpTime: maxTime},
+		store:     CookieStore{KeyName: keyName, ExpTime: maxTime},
 	}
 	mgr.GC()
 	return mgr
@@ -33,7 +33,7 @@ func NewHeaderSessionMgr(keyName string, maxTime int64) *SessionMgr {
 		mKeyName:  keyName,
 		mMaxTime:  maxTime,
 		mSessions: make(map[string]*Session),
-		store:     &HeaderStore{KeyName: keyName},
+		store:     HeaderStore{KeyName: keyName},
 	}
 	mgr.GC()
 	return mgr
@@ -65,8 +65,8 @@ func (p *SessionMgr) GC() {
 }
 
 func (p *SessionMgr) Set(r *http.Request, w http.ResponseWriter, key, val interface{}) {
-	storeKey := m.store.Get(r)
-	if store == "" {
+	storeKey := p.store.Get(r)
+	if storeKey == "" {
 		storeKey := generCookieValue()
 		p.store.Set(w, storeKey)
 	}
@@ -75,13 +75,12 @@ func (p *SessionMgr) Set(r *http.Request, w http.ResponseWriter, key, val interf
 	defer p.mLock.Unlock()
 
 	if _, ok := p.mSessions[storeKey]; !ok {
-		p.mSessions[cookie.Value] = &Session{
+		p.mSessions[storeKey] = &Session{
 			mLastVisitTime: time.Now(),
 			Value:          make(map[interface{}]interface{}),
 		}
 	}
 	p.mSessions[storeKey].Value[key] = val
-	http.SetCookie(w, cookie)
 }
 
 func (p *SessionMgr) Get(r *http.Request, key interface{}) (interface{}, bool) {
