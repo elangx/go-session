@@ -41,7 +41,7 @@ func (p *SessionMgr) Set(w http.ResponseWriter, key, val interface{}) {
 	cookie := &http.Cookie{
 		Name:    key.(string),
 		Value:   val.(string),
-		Expires: time.Now().Add(p.maxTime.(time.Duration)),
+		Expires: time.Now().Add(p.mMaxTime.(time.Duration)),
 	}
 
 	p.mLock.Lock()
