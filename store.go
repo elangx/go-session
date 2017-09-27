@@ -7,7 +7,7 @@ import (
 
 type Store interface {
 	Get(r *http.Request) string
-	Set(w http.ResponseWriter)
+	Set(w http.ResponseWriter, val string)
 }
 
 type CookieStore struct {
