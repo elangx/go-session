@@ -67,9 +67,9 @@ func (p *SessionMgr) GC() {
 func (p *SessionMgr) Set(r *http.Request, w http.ResponseWriter, key, val interface{}) {
 	storeKey := p.store.Get(r)
 	if storeKey == "" {
-		storeKey := generCookieValue()
-		p.store.Set(w, storeKey)
+		storeKey = generCookieValue()
 	}
+	p.store.Set(w, storeKey)
 
 	p.mLock.Lock()
 	defer p.mLock.Unlock()
